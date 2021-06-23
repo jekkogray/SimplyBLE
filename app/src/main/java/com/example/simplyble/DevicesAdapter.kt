@@ -30,6 +30,7 @@ class DevicesAdapter(val BLEDevices: MutableList<BLEDevice>) :
     }
 
     override fun getItemCount(): Int {
+        // TODO: Prevent duplicate inputs
         return BLEDevices.size
     }
 
@@ -39,7 +40,7 @@ class DevicesAdapter(val BLEDevices: MutableList<BLEDevice>) :
         val currentDevice = BLEDevices[position]
         val viewContext = holder.itemView.context
         holder.deviceCard.setOnClickListener {
-            // Connect here
+            // TODO: Connect here
             Toast.makeText(viewContext, "Connecting...", Toast.LENGTH_SHORT).show()
             BLEDevices[position].deviceConnectable = !BLEDevices[position].deviceConnectable
             this.notifyDataSetChanged()

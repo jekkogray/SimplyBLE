@@ -2,25 +2,19 @@ package com.example.simplyble
 
 import android.Manifest
 import android.bluetooth.BluetoothAdapter
-import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothManager
-import android.bluetooth.BluetoothProfile
 import android.bluetooth.le.BluetoothLeScanner
 import android.bluetooth.le.ScanCallback
 import android.bluetooth.le.ScanResult
-import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
 import android.content.pm.PackageManager
-import android.location.LocationManager
 import android.os.AsyncTask
 import android.os.Bundle
 import android.util.Log
 import android.widget.Button
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.location.LocationManagerCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 
@@ -81,7 +75,12 @@ class MainActivity : AppCompatActivity() {
             || checkSelfPermission(Manifest.permission.BLUETOOTH_ADMIN) != PackageManager.PERMISSION_GRANTED
         ) {
             requestPermissions(
-                arrayOf(Manifest.permission.BLUETOOTH, Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_BACKGROUND_LOCATION, Manifest.permission.BLUETOOTH_ADMIN),
+                arrayOf(
+                    Manifest.permission.BLUETOOTH,
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.ACCESS_BACKGROUND_LOCATION,
+                    Manifest.permission.BLUETOOTH_ADMIN
+                ),
                 PERMISSIONS
             )
         }
@@ -93,9 +92,9 @@ class MainActivity : AppCompatActivity() {
         grantResults: IntArray
     ) {
         when (requestCode) {
-           PERMISSIONS -> {
+            PERMISSIONS -> {
                 // All granted
-                if (!grantResults.any{it != PackageManager.PERMISSION_GRANTED} ) {
+                if (!grantResults.any { it != PackageManager.PERMISSION_GRANTED }) {
                     Toast.makeText(
                         applicationContext,
                         "Permissions granted.",
@@ -125,8 +124,9 @@ class MainActivity : AppCompatActivity() {
         sortButton = findViewById(R.id.sortButton)
 
         startScanning()
-
-//        var devicesList: MutableList<BLEDevice> = getFakeDevices() // Mutable order
+    
+        // TESTING
+        //  var devicesList: MutableList<BLEDevice> = getFakeDevices() // Mutable order
         var devicesList: MutableList<BLEDevice> = mutableListOf<BLEDevice>() // Mutable order
         val devicesListOriginal = mutableListOf<BLEDevice>() // Original order
         devicesListOriginal.addAll(devicesList)
