@@ -1,4 +1,11 @@
 package com.example.simplyble
-import java.io.Serializable
 
-data class BLEDevice (val deviceName: String, val deviceRSSI:Float, var deviceConnectable: Boolean)
+import android.bluetooth.le.ScanResult
+
+data class BLEDevice(
+    var deviceName: String,
+    val deviceAddress: String,
+    var deviceRSSI: Int,
+    var deviceConnectable: Boolean,
+    var scanResult: ScanResult? = null
+)

@@ -15,4 +15,11 @@
     <string name="bl_disabled">BL is disabled.</string>
     <string name="bl_permission_enabled">BL permission is enabled.</string>
     <string name="bl_permission_disabled">BL permission is disabled.</string>
+
+    <!--    states-->
+    <string name="bl_state_scanning">Scanning for devices...</string>
+    <string name="bl_devices_found">Found: </string>
+    <string name="bl_devices_not_found">No BLE devices nearby.</string>
+    <string name="bl_state_scan_failed">Scan failed, try again.</string>
+
 </resources>

@@ -1,5 +1,6 @@
 package com.example.simplyble
 
+import android.bluetooth.BluetoothAdapter
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -8,7 +9,10 @@ import android.widget.Toast
 import androidx.cardview.widget.CardView
 import androidx.recyclerview.widget.RecyclerView
 
-class DevicesAdapter(val BLEDevices: MutableList<BLEDevice>) :
+class DevicesAdapter(
+    val BLEDevices: MutableList<BLEDevice>,
+    val bluetoothAdapter: BluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
+) :
     RecyclerView.Adapter<DevicesAdapter.ViewHolder>() {
     class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val deviceCard: CardView = itemView.findViewById(R.id.deviceCard)
@@ -18,7 +22,14 @@ class DevicesAdapter(val BLEDevices: MutableList<BLEDevice>) :
     }
 
     fun addItem(device: BLEDevice) {
-        BLEDevices.add(device)
+        // TODO: if sorted automatically sort after insertion and update new original list
+        // Update
+        val updateDeviceIndex = BLEDevices.indexOfFirst { it.deviceAddress == device.deviceAddress }
+        if (updateDeviceIndex != -1) {
+            BLEDevices[updateDeviceIndex] = device
+        } else {
+            BLEDevices.add(device)
+        }
         this.notifyDataSetChanged()
     }
 
@@ -30,19 +41,19 @@ class DevicesAdapter(val BLEDevices: MutableList<BLEDevice>) :
     }
 
     override fun getItemCount(): Int {
-        // TODO: Prevent duplicate inputs
         return BLEDevices.size
     }
 
-
     // ViewHolder ready to display new row.
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        val currentDevice = BLEDevices[position]
+        val currentDevice = BLEDevices.elementAt(position)
         val viewContext = holder.itemView.context
         holder.deviceCard.setOnClickListener {
             // TODO: Connect here
             Toast.makeText(viewContext, "Connecting...", Toast.LENGTH_SHORT).show()
-            BLEDevices[position].deviceConnectable = !BLEDevices[position].deviceConnectable
+
+
+            currentDevice.deviceConnectable = !currentDevice.deviceConnectable
             this.notifyDataSetChanged()
         }
         holder.deviceName.text =
