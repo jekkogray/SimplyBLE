@@ -14,6 +14,8 @@ class DevicesAdapter(
     val bluetoothAdapter: BluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
 ) :
     RecyclerView.Adapter<DevicesAdapter.ViewHolder>() {
+    private val cBLEDevices = mutableListOf<BLEDevice>()
+    // TODO: Implement a way to store original order of the list
     class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val deviceCard: CardView = itemView.findViewById(R.id.deviceCard)
         val deviceName: TextView = itemView.findViewById(R.id.deviceName)
@@ -31,6 +33,13 @@ class DevicesAdapter(
             BLEDevices.add(device)
         }
         this.notifyDataSetChanged()
+    }
+
+    fun sortByDescending() {
+        cBLEDevices.clear()
+        cBLEDevices.addAll(BLEDevices)
+        BLEDevices.sortByDescending { it.deviceRSSI }
+        notifyDataSetChanged()
     }
 
     // Recyclerview new row creation -- specify XML.

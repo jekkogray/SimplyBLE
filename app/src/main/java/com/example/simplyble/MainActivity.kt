@@ -5,18 +5,22 @@ import android.bluetooth.*
 import android.bluetooth.le.BluetoothLeScanner
 import android.bluetooth.le.ScanCallback
 import android.bluetooth.le.ScanResult
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.ServiceConnection
 import android.content.pm.PackageManager
 import android.os.AsyncTask
 import android.os.Build
 import android.os.Bundle
+import android.os.IBinder
 import android.util.Log
 import android.view.View
 import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
 import androidx.annotation.RequiresApi
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -26,6 +30,8 @@ class MainActivity : AppCompatActivity() {
     val TAG = MainActivity::class.java.simpleName
     private val REQUEST_ENABLE_BT = 1
     private val PERMISSIONS = 1
+
+    val devicesList: MutableList<BLEDevice> = mutableListOf<BLEDevice>()
 
     // UI
     private lateinit var blStateScanning: TextView
@@ -39,6 +45,24 @@ class MainActivity : AppCompatActivity() {
     private lateinit var bluetoothManager: BluetoothManager
     private lateinit var bluetoothAdapter: BluetoothAdapter
     private lateinit var bluetoothLeScanner: BluetoothLeScanner
+    private var bluetoothService: BluetoothLEService? = null
+
+
+    private val serviceConnection: ServiceConnection = object : ServiceConnection {
+        override fun onServiceConnected(
+            componentName: ComponentName,
+            service: IBinder
+        ) {
+            bluetoothService = (service as BluetoothLEService.LocalBinder).getService()
+            bluetoothService?.let { bluetooth ->
+                // call functions on service to check connection and connect to devices
+            }
+        }
+
+        override fun onServiceDisconnected(componentName: ComponentName) {
+            bluetoothService = null
+        }
+    }
 
     private val bluetoothGattCallback = object : BluetoothGattCallback() {
         override fun onConnectionStateChange(gatt: BluetoothGatt?, status: Int, newState: Int) {
@@ -71,6 +95,7 @@ class MainActivity : AppCompatActivity() {
             super.onReadRemoteRssi(gatt, rssi, status)
         }
     }
+
     private val leScanCallback = object : ScanCallback() {
         @RequiresApi(Build.VERSION_CODES.O)
         override fun onScanResult(callbackType: Int, result: ScanResult?) {
@@ -110,45 +135,101 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.Q)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-
-        startBluetooth()
-        startUI()
+        initializeUI()
+        checkPermissions()
     }
 
-    private fun startBluetooth() {
-        bluetoothManager = getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
-        bluetoothAdapter = bluetoothManager.adapter
-        bluetoothLeScanner = bluetoothAdapter.bluetoothLeScanner
-
-        // Enable bluetooth
-        if (!bluetoothAdapter.isEnabled) {
-            val enableIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
-            startActivityForResult(enableIntent, REQUEST_ENABLE_BT)
-        }
-
-        if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
-            || checkSelfPermission(Manifest.permission.BLUETOOTH) != PackageManager.PERMISSION_GRANTED
-            || checkSelfPermission(Manifest.permission.ACCESS_BACKGROUND_LOCATION) != PackageManager.PERMISSION_GRANTED
-            || checkSelfPermission(Manifest.permission.BLUETOOTH_ADMIN) != PackageManager.PERMISSION_GRANTED
+    private fun checkPermissions() {
+        // Check permissions
+        if (checkSelfPermission(Manifest.permission.BLUETOOTH) +
+            checkSelfPermission(Manifest.permission.BLUETOOTH_ADMIN) +
+            checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) +
+            checkSelfPermission(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
+            != PackageManager.PERMISSION_GRANTED
         ) {
-            requestPermissions(
-                arrayOf(
-                    Manifest.permission.BLUETOOTH,
-                    Manifest.permission.ACCESS_FINE_LOCATION,
-                    Manifest.permission.ACCESS_BACKGROUND_LOCATION,
-                    Manifest.permission.BLUETOOTH_ADMIN
-                ),
-                PERMISSIONS
-            )
+            // Show alert dialog with request explanation
+            if (shouldShowRequestPermissionRationale(Manifest.permission.BLUETOOTH_ADMIN) ||
+                shouldShowRequestPermissionRationale(Manifest.permission.BLUETOOTH) ||
+                shouldShowRequestPermissionRationale(Manifest.permission.ACCESS_FINE_LOCATION) ||
+                shouldShowRequestPermissionRationale(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
+            ) {
+                val alertDialog = AlertDialog.Builder(applicationContext)
+                    .setTitle("Please the following permissions")
+                    .setMessage("Bluetooth, Bluetooth Admin, Access Fine Location, and Access Background are required to find and connect to BLE devices.")
+                    .setPositiveButton(
+                        "OK"
+                    ) { _, _ ->
+                        requestPermissions(
+                            arrayOf(
+                                Manifest.permission.BLUETOOTH,
+                                Manifest.permission.ACCESS_FINE_LOCATION,
+                                Manifest.permission.ACCESS_BACKGROUND_LOCATION,
+                                Manifest.permission.BLUETOOTH_ADMIN
+                            ),
+                            PERMISSIONS
+                        )
+                    }
+                    .setNeutralButton("Cancel", null)
+                    .create()
+                    .show()
+            } else {
+                // Requests permissions without explanation
+                requestPermissions(
+                    arrayOf(
+                        Manifest.permission.BLUETOOTH,
+                        Manifest.permission.ACCESS_FINE_LOCATION,
+                        Manifest.permission.ACCESS_BACKGROUND_LOCATION,
+                        Manifest.permission.BLUETOOTH_ADMIN
+                    ),
+                    PERMISSIONS
+                )
+            }
+        } else {
+            Toast.makeText(applicationContext, "Permissions already granted.", Toast.LENGTH_SHORT)
+                .show()
         }
     }
 
-    override fun onDestroy() {
-        stopScanning()
-        super.onDestroy()
+    /**
+     * Initialize views in this activity.
+     */
+    private fun initializeUI() {
+        devicesRecyclerView = findViewById(R.id.devicesRecyclerView)
+        sortButton = findViewById(R.id.sortButton)
+        blStateScanning = findViewById(R.id.bl_state_scanning)
+        blDevicesFound = findViewById(R.id.bl_devices_found)
+
+//        val devicesListOriginal = mutableListOf<BLEDevice>()// Original order
+//        devicesListOriginal.addAll(devicesList)
+        devicesAdapter = DevicesAdapter(devicesList)
+        devicesRecyclerView.adapter = devicesAdapter
+        devicesRecyclerView.layoutManager = LinearLayoutManager(this)
+
+
+        sortButton.visibility = View.INVISIBLE
+        sortButton.isEnabled = false
+
+        sortButton.setOnClickListener {
+            sorted = !sorted
+            updateSortButtonText()
+            if (!sorted) {
+//                devicesList.clear()
+//                devicesList.addAll(devicesListOriginal)
+//                devicesAdapter.notifyDataSetChanged()
+            } else {
+//                devicesList.sortByDescending { it.deviceRSSI }
+//                devicesAdapter.notifyDataSetChanged()
+            }
+        }
+    }
+
+    private fun startUI() {
+        startScanning()
+        // var devicesList: MutableList<BLEDevice> = getFakeDevices() // Mutable order
     }
 
     override fun onRequestPermissionsResult(
@@ -158,17 +239,19 @@ class MainActivity : AppCompatActivity() {
     ) {
         when (requestCode) {
             PERMISSIONS -> {
-                // All granted
-                if (!grantResults.any { it != PackageManager.PERMISSION_GRANTED }) {
+                val granted = !grantResults.any { it != PackageManager.PERMISSION_GRANTED }
+                if (granted) {
                     Toast.makeText(
                         applicationContext,
                         "Permissions granted.",
                         Toast.LENGTH_SHORT
                     ).show()
+                    startUI()
+                    startBluetooth()
                 } else {
                     Toast.makeText(
                         applicationContext,
-                        "Not all required permissions is granted.",
+                        "Permissions denied.",
                         Toast.LENGTH_LONG
                     ).show()
                 }
@@ -176,6 +259,28 @@ class MainActivity : AppCompatActivity() {
         }
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
     }
+
+
+    private fun startBluetooth() {
+        // Enable bluetooth
+        if (!bluetoothAdapter.isEnabled) {
+            val enableIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
+            startActivityForResult(enableIntent, REQUEST_ENABLE_BT)
+        }
+
+        val gattServiceIntent = Intent(this, BluetoothLEService::class.java)
+        bindService(gattServiceIntent, serviceConnection, Context.BIND_AUTO_CREATE)
+        bluetoothManager = getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
+        bluetoothAdapter = bluetoothManager.adapter
+        bluetoothLeScanner = bluetoothAdapter.bluetoothLeScanner
+    }
+
+
+    override fun onDestroy() {
+        stopScanning()
+        super.onDestroy()
+    }
+
 
     private fun startScanning(ms: Long = 10000L) {
         Log.d(TAG, "Scanner stated...")
@@ -201,37 +306,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-
-    private fun startUI() {
-        // Initialize UI
-        devicesRecyclerView = findViewById(R.id.devicesRecyclerView)
-        sortButton = findViewById(R.id.sortButton)
-        blStateScanning = findViewById(R.id.bl_state_scanning)
-        blDevicesFound = findViewById(R.id.bl_devices_found)
-
-        startScanning()
-        // var devicesList: MutableList<BLEDevice> = getFakeDevices() // Mutable order
-        var devicesList: MutableList<BLEDevice> = mutableListOf<BLEDevice>() // Mutable order
-        val devicesListOriginal = mutableListOf<BLEDevice>()// Original order
-        devicesListOriginal.addAll(devicesList)
-        devicesAdapter = DevicesAdapter(devicesList)
-        devicesRecyclerView.adapter = devicesAdapter
-        devicesRecyclerView.layoutManager = LinearLayoutManager(this)
-
-        sortButton.visibility = View.INVISIBLE
-        sortButton.setOnClickListener {
-            sorted = !sorted
-            updateSortButtonText()
-            if (!sorted) {
-                devicesList.clear()
-                devicesList.addAll(devicesListOriginal)
-                devicesAdapter.notifyDataSetChanged()
-            } else {
-                devicesList.sortByDescending { it.deviceRSSI }
-                devicesAdapter.notifyDataSetChanged()
-            }
-        }
-    }
 
 
     private fun updateSortButtonText() {
