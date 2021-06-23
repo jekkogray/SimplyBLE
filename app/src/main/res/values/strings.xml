@@ -1,3 +1,18 @@
 <resources>
     <string name="app_name">SimplyBLE</string>
+
+    <string name="disable_sort_button">Disable Sort RSSI</string>
+    <string name="enable_sort_button">Enable Sort RSSI</string>
+
+    <!-- rows_device.xml-->
+    <string name="device_name">Device:</string>
+    <string name="device_connectable">Connectable:</string>
+    <string name="device_RSSI">RSSI:</string>
+    <string name="ble_not_supported">BLE is not supported in this device.</string>
+    <string name="ble_supported">BLE found.</string>
+    <string name="bl_not_supported">BL is not supported in this device.</string>
+    <string name="bl_enabled">BL is enabled.</string>
+    <string name="bl_disabled">BL is disabled.</string>
+    <string name="bl_permission_enabled">BL permission is enabled.</string>
+    <string name="bl_permission_disabled">BL permission is disabled.</string>
 </resources>
