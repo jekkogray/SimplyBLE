@@ -1,6 +1,8 @@
 package com.example.simplyble
 
 import android.bluetooth.BluetoothAdapter
+import android.content.Intent
+import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -58,11 +60,12 @@ class DevicesAdapter(
         val currentDevice = BLEDevices.elementAt(position)
         val viewContext = holder.itemView.context
         holder.deviceCard.setOnClickListener {
-            // TODO: Connect here
-            Toast.makeText(viewContext, "Connecting...", Toast.LENGTH_SHORT).show()
-
-
-            currentDevice.deviceConnectable = !currentDevice.deviceConnectable
+//            currentDevice.deviceConnectable = !currentDevice.deviceConnectable
+//            val deviceBundle = Bundle()
+//            deviceBundle.putSerializable("BLEDevice", currentDevice)
+            val intentBLEDeviceConnect = Intent("BLEDeviceConnect")
+            intentBLEDeviceConnect.putExtra("BLEDeviceAddress", currentDevice.deviceAddress)
+            it.context.sendBroadcast(intentBLEDeviceConnect)
             this.notifyDataSetChanged()
         }
         holder.deviceName.text =

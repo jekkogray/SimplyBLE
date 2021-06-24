@@ -5,10 +5,7 @@ import android.bluetooth.*
 import android.bluetooth.le.BluetoothLeScanner
 import android.bluetooth.le.ScanCallback
 import android.bluetooth.le.ScanResult
-import android.content.ComponentName
-import android.content.Context
-import android.content.Intent
-import android.content.ServiceConnection
+import android.content.*
 import android.content.pm.PackageManager
 import android.os.AsyncTask
 import android.os.Build
@@ -69,10 +66,15 @@ class MainActivity : AppCompatActivity() {
             when (newState) {
                 BluetoothProfile.STATE_CONNECTED -> {
                     Log.i("${TAG}/bluetoothGattCallBack", "STATE_CONNECTED")
-                    gatt?.discoverServices()
+                    runOnUiThread() {
+                       Toast.makeText(applicationContext, "Connected to Gatt", Toast.LENGTH_SHORT).show()
+                    }
                 }
                 BluetoothProfile.STATE_DISCONNECTED -> {
                     Log.i("${TAG}/bluetoothGattCallBack", "STATE_DISCONNECTED")
+                    runOnUiThread() {
+                        Toast.makeText(applicationContext, "Disconnected to Gatt", Toast.LENGTH_SHORT).show()
+                    }
                 }
             }
         }
@@ -90,10 +92,6 @@ class MainActivity : AppCompatActivity() {
             Log.i("onCharacteristicsRead", characteristic.toString())
             gatt?.disconnect()
         }
-
-        override fun onReadRemoteRssi(gatt: BluetoothGatt?, rssi: Int, status: Int) {
-            super.onReadRemoteRssi(gatt, rssi, status)
-        }
     }
 
     private val leScanCallback = object : ScanCallback() {
@@ -108,12 +106,10 @@ class MainActivity : AppCompatActivity() {
                     result.device.name,
                     result.device.address,
                     result.rssi,
-                    result.isConnectable,
-                    result
+                    result.isConnectable
                 )
 
                 devicesAdapter.addItem(bleDevice)
-                result.device.connectGatt(applicationContext, false, bluetoothGattCallback)
                 blDevicesFound.text =
                     "${getString(R.string.bl_devices_found)}${devicesAdapter.itemCount}"
                 Log.d(TAG, "Device Name: ${result.device.name}")
@@ -157,7 +153,7 @@ class MainActivity : AppCompatActivity() {
                 shouldShowRequestPermissionRationale(Manifest.permission.ACCESS_FINE_LOCATION) ||
                 shouldShowRequestPermissionRationale(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
             ) {
-                val alertDialog = AlertDialog.Builder(applicationContext)
+                AlertDialog.Builder(applicationContext)
                     .setTitle("Please the following permissions")
                     .setMessage("Bluetooth, Bluetooth Admin, Access Fine Location, and Access Background are required to find and connect to BLE devices.")
                     .setPositiveButton(
@@ -191,6 +187,7 @@ class MainActivity : AppCompatActivity() {
         } else {
             Toast.makeText(applicationContext, "Permissions already granted.", Toast.LENGTH_SHORT)
                 .show()
+            initializeBluetooth()
         }
     }
 
@@ -237,6 +234,7 @@ class MainActivity : AppCompatActivity() {
         permissions: Array<out String>,
         grantResults: IntArray
     ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         when (requestCode) {
             PERMISSIONS -> {
                 val granted = !grantResults.any { it != PackageManager.PERMISSION_GRANTED }
@@ -246,8 +244,7 @@ class MainActivity : AppCompatActivity() {
                         "Permissions granted.",
                         Toast.LENGTH_SHORT
                     ).show()
-                    startUI()
-                    startBluetooth()
+                    initializeBluetooth()
                 } else {
                     Toast.makeText(
                         applicationContext,
@@ -257,24 +254,44 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
     }
 
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        when (requestCode) {
+            REQUEST_ENABLE_BT -> {
+                startScanning()
+            }
+        }
+    }
 
-    private fun startBluetooth() {
+    private fun initializeBluetooth() {
+        bluetoothManager = getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
+        bluetoothAdapter = bluetoothManager.adapter
+        bluetoothLeScanner = bluetoothAdapter.bluetoothLeScanner
         // Enable bluetooth
         if (!bluetoothAdapter.isEnabled) {
             val enableIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
             startActivityForResult(enableIntent, REQUEST_ENABLE_BT)
+        } else {
+            startScanning()
         }
-
-        val gattServiceIntent = Intent(this, BluetoothLEService::class.java)
-        bindService(gattServiceIntent, serviceConnection, Context.BIND_AUTO_CREATE)
-        bluetoothManager = getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
-        bluetoothAdapter = bluetoothManager.adapter
-        bluetoothLeScanner = bluetoothAdapter.bluetoothLeScanner
     }
 
+    override fun onResume() {
+        super.onResume()
+        val intentFilterBLEConnect = IntentFilter("BLEDeviceConnect")
+        val receiverBLEDeviceConnect = object : BroadcastReceiver() {
+            override fun onReceive(context: Context?, intent: Intent?) {
+                bluetoothManager = getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
+                bluetoothAdapter = bluetoothManager.adapter
+                val deviceAddress= intent?.getStringExtra("BLEDeviceAddress")
+                val device = bluetoothAdapter.getRemoteDevice(deviceAddress)
+                device.connectGatt(applicationContext, false, bluetoothGattCallback)
+            }
+        }
+        registerReceiver(receiverBLEDeviceConnect, intentFilterBLEConnect)
+    }
 
     override fun onDestroy() {
         stopScanning()
@@ -293,20 +310,16 @@ class MainActivity : AppCompatActivity() {
                     stopScanning()
                 }
             }, ms)
-
         }
     }
 
     private fun stopScanning() {
         Log.d(TAG, "Scanner stopped...")
         blStateScanning.visibility = View.INVISIBLE
-//        blDevicesFound.visibility = View.INVISIBLE
         AsyncTask.execute {
             bluetoothLeScanner.stopScan(leScanCallback)
         }
     }
-
-
 
     private fun updateSortButtonText() {
         if (sorted) {
@@ -317,13 +330,13 @@ class MainActivity : AppCompatActivity() {
     }
 
 
-    private fun getFakeDevices(): MutableList<BLEDevice> {
-        return mutableListOf(
-            BLEDevice("Test Device", "74:BF:C0:18:64:0F", -20, false),
-            BLEDevice("Test Device", "74:BF:C0:18:64:0F", -90, false),
-            BLEDevice("Test Device", "74:BF:C0:18:64:0F", -2, false),
-            BLEDevice("Test Device", "74:BF:C0:18:64:0F", -40, false),
-            BLEDevice("Test Device", "74:BF:C0:18:64:0F", -50, false)
-        )
-    }
+//    private fun getFakeDevices(): MutableList<BLEDevice> {
+//        return mutableListOf(
+//            BLEDevice("Test Device", "74:BF:C0:18:64:0F", -20, false),
+//            BLEDevice("Test Device", "74:BF:C0:18:64:0F", -90, false),
+//            BLEDevice("Test Device", "74:BF:C0:18:64:0F", -2, false),
+//            BLEDevice("Test Device", "74:BF:C0:18:64:0F", -40, false),
+//            BLEDevice("Test Device", "74:BF:C0:18:64:0F", -50, false)
+//        )
+//    }
 }
