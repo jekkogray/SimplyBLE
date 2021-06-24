@@ -68,6 +68,7 @@ class MainActivity : AppCompatActivity() {
                     Log.i("${TAG}/bluetoothGattCallBack", "STATE_CONNECTED")
                     runOnUiThread() {
                        Toast.makeText(applicationContext, "Connected to Gatt", Toast.LENGTH_SHORT).show()
+                        gatt?.discoverServices()
                     }
                 }
                 BluetoothProfile.STATE_DISCONNECTED -> {

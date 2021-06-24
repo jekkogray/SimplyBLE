@@ -60,9 +60,6 @@ class DevicesAdapter(
         val currentDevice = BLEDevices.elementAt(position)
         val viewContext = holder.itemView.context
         holder.deviceCard.setOnClickListener {
-//            currentDevice.deviceConnectable = !currentDevice.deviceConnectable
-//            val deviceBundle = Bundle()
-//            deviceBundle.putSerializable("BLEDevice", currentDevice)
             val intentBLEDeviceConnect = Intent("BLEDeviceConnect")
             intentBLEDeviceConnect.putExtra("BLEDeviceAddress", currentDevice.deviceAddress)
             it.context.sendBroadcast(intentBLEDeviceConnect)
