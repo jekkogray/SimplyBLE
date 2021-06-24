@@ -5,15 +5,19 @@ import android.bluetooth.*
 import android.bluetooth.le.BluetoothLeScanner
 import android.bluetooth.le.ScanCallback
 import android.bluetooth.le.ScanResult
-import android.content.*
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
-import android.os.AsyncTask
 import android.os.Build
 import android.os.Bundle
-import android.os.IBinder
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import android.view.View
 import android.widget.Button
+import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.annotation.RequiresApi
@@ -28,54 +32,58 @@ class MainActivity : AppCompatActivity() {
     private val REQUEST_ENABLE_BT = 1
     private val PERMISSIONS = 1
 
-    val devicesList: MutableList<BLEDevice> = mutableListOf<BLEDevice>()
-
-    // UI
     private lateinit var blStateScanning: TextView
     private lateinit var blDevicesFound: TextView
-    private lateinit var devicesRecyclerView: RecyclerView
+    private lateinit var progressBar: ProgressBar
     private lateinit var sortButton: Button
+    private lateinit var devicesRecyclerView: RecyclerView
     private lateinit var devicesAdapter: DevicesAdapter
-
-    private var sorted = false
 
     private lateinit var bluetoothManager: BluetoothManager
     private lateinit var bluetoothAdapter: BluetoothAdapter
     private lateinit var bluetoothLeScanner: BluetoothLeScanner
-    private var bluetoothService: BluetoothLEService? = null
-
-
-    private val serviceConnection: ServiceConnection = object : ServiceConnection {
-        override fun onServiceConnected(
-            componentName: ComponentName,
-            service: IBinder
-        ) {
-            bluetoothService = (service as BluetoothLEService.LocalBinder).getService()
-            bluetoothService?.let { bluetooth ->
-                // call functions on service to check connection and connect to devices
-            }
-        }
-
-        override fun onServiceDisconnected(componentName: ComponentName) {
-            bluetoothService = null
-        }
-    }
 
     private val bluetoothGattCallback = object : BluetoothGattCallback() {
         override fun onConnectionStateChange(gatt: BluetoothGatt?, status: Int, newState: Int) {
-            when (newState) {
-                BluetoothProfile.STATE_CONNECTED -> {
-                    Log.i("${TAG}/bluetoothGattCallBack", "STATE_CONNECTED")
-                    runOnUiThread() {
-                       Toast.makeText(applicationContext, "Connected to Gatt", Toast.LENGTH_SHORT).show()
+            val deviceName = if (gatt?.device?.name !=null) gatt?.device?.name else "Unknown"
+            if (status == BluetoothGatt.GATT_SUCCESS) {
+                when (newState) {
+                    BluetoothProfile.STATE_CONNECTED -> {
+                        Log.i("${TAG}/bluetoothGattCallBack", "STATE_CONNECTED")
+                        runOnUiThread() {
+                            Toast.makeText(
+                                applicationContext,
+                                "${deviceName}\nConnected to Gatt",
+                                Toast.LENGTH_SHORT
+                            )
+                                .show()
+                        }
                         gatt?.discoverServices()
                     }
-                }
-                BluetoothProfile.STATE_DISCONNECTED -> {
-                    Log.i("${TAG}/bluetoothGattCallBack", "STATE_DISCONNECTED")
-                    runOnUiThread() {
-                        Toast.makeText(applicationContext, "Disconnected to Gatt", Toast.LENGTH_SHORT).show()
+                    BluetoothProfile.STATE_DISCONNECTED -> {
+                        Log.i("${TAG}/bluetoothGattCallBac", "STATE_DISCONNECTED")
+                        runOnUiThread() {
+                            Toast.makeText(
+                                applicationContext,
+                                "${deviceName}\nDisconnected to Gatt",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
                     }
+                    else -> {
+                        Log.i("${TAG}/bluetoothGattCallBac", "STATE_DISCONNECTED")
+                        runOnUiThread() {
+                            Toast.makeText(
+                                applicationContext,
+                                "${deviceName}\nUnable to Connect to Gatt",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    }
+                }
+            } else {
+                runOnUiThread{
+                    Toast.makeText(applicationContext, "${deviceName}\nConnection failed.", Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -99,12 +107,11 @@ class MainActivity : AppCompatActivity() {
         @RequiresApi(Build.VERSION_CODES.O)
         override fun onScanResult(callbackType: Int, result: ScanResult?) {
             super.onScanResult(callbackType, result)
-
-            if (result != null && result.device.type == BluetoothDevice.DEVICE_TYPE_LE) {
+            if (result != null) {
                 blDevicesFound.visibility = View.VISIBLE
-
+                val deviceName:String= if (result?.device?.name != null) result?.device?.name!! else "Unknown"
                 val bleDevice = BLEDevice(
-                    result.device.name,
+                    deviceName,
                     result.device.address,
                     result.rssi,
                     result.isConnectable
@@ -132,7 +139,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    @RequiresApi(Build.VERSION_CODES.Q)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -140,6 +146,9 @@ class MainActivity : AppCompatActivity() {
         checkPermissions()
     }
 
+    /**
+     * Checks if the following permissions BLUETOOTH, BLUETOOTH_ADMIN, FINE_LOCATION
+     */
     private fun checkPermissions() {
         // Check permissions
         if (checkSelfPermission(Manifest.permission.BLUETOOTH) +
@@ -155,7 +164,7 @@ class MainActivity : AppCompatActivity() {
                 shouldShowRequestPermissionRationale(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
             ) {
                 AlertDialog.Builder(applicationContext)
-                    .setTitle("Please the following permissions")
+                    .setTitle("Please allow the following permissions")
                     .setMessage("Bluetooth, Bluetooth Admin, Access Fine Location, and Access Background are required to find and connect to BLE devices.")
                     .setPositiveButton(
                         "OK"
@@ -196,38 +205,22 @@ class MainActivity : AppCompatActivity() {
      * Initialize views in this activity.
      */
     private fun initializeUI() {
-        devicesRecyclerView = findViewById(R.id.devicesRecyclerView)
-        sortButton = findViewById(R.id.sortButton)
         blStateScanning = findViewById(R.id.bl_state_scanning)
         blDevicesFound = findViewById(R.id.bl_devices_found)
+        progressBar = findViewById(R.id.progressBar)
+        devicesRecyclerView = findViewById(R.id.devicesRecyclerView)
+        sortButton = findViewById(R.id.sortButton)
 
-//        val devicesListOriginal = mutableListOf<BLEDevice>()// Original order
-//        devicesListOriginal.addAll(devicesList)
-        devicesAdapter = DevicesAdapter(devicesList)
+        devicesAdapter = DevicesAdapter(mutableListOf<BLEDevice>())
         devicesRecyclerView.adapter = devicesAdapter
         devicesRecyclerView.layoutManager = LinearLayoutManager(this)
-
-
-        sortButton.visibility = View.INVISIBLE
-        sortButton.isEnabled = false
-
         sortButton.setOnClickListener {
-            sorted = !sorted
-            updateSortButtonText()
-            if (!sorted) {
-//                devicesList.clear()
-//                devicesList.addAll(devicesListOriginal)
-//                devicesAdapter.notifyDataSetChanged()
+            if (devicesAdapter.toggleSorting()) {
+                sortButton.text = getString(R.string.sorting_enabled)
             } else {
-//                devicesList.sortByDescending { it.deviceRSSI }
-//                devicesAdapter.notifyDataSetChanged()
+                sortButton.text = getString(R.string.sorting_disabled)
             }
         }
-    }
-
-    private fun startUI() {
-        startScanning()
-        // var devicesList: MutableList<BLEDevice> = getFakeDevices() // Mutable order
     }
 
     override fun onRequestPermissionsResult(
@@ -286,11 +279,12 @@ class MainActivity : AppCompatActivity() {
             override fun onReceive(context: Context?, intent: Intent?) {
                 bluetoothManager = getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
                 bluetoothAdapter = bluetoothManager.adapter
-                val deviceAddress= intent?.getStringExtra("BLEDeviceAddress")
+                val deviceAddress = intent?.getStringExtra("BLEDeviceAddress")
                 val device = bluetoothAdapter.getRemoteDevice(deviceAddress)
                 device.connectGatt(applicationContext, false, bluetoothGattCallback)
             }
         }
+        // TODO: Create receiver for updating already connected device
         registerReceiver(receiverBLEDeviceConnect, intentFilterBLEConnect)
     }
 
@@ -299,45 +293,38 @@ class MainActivity : AppCompatActivity() {
         super.onDestroy()
     }
 
-
-    private fun startScanning(ms: Long = 10000L) {
-        Log.d(TAG, "Scanner stated...")
+    private fun startScanning(ms: Long = 30000L) {
+        Log.i(TAG, "Scanner started...")
         blStateScanning.visibility = View.VISIBLE
-        AsyncTask.execute {
-            bluetoothLeScanner.startScan(leScanCallback)
-            blStateScanning.visibility = View.VISIBLE
-            Timer().schedule(object : TimerTask() {
-                override fun run() {
-                    stopScanning()
+        bluetoothLeScanner.startScan(leScanCallback)
+        blStateScanning.visibility = View.VISIBLE
+        Timer().schedule(object : TimerTask() {
+            override fun run() {
+                stopScanning()
+            }
+        }, ms)
+
+        val timerHandler = Handler(Looper.getMainLooper())
+        timerHandler.post(object : Runnable {
+            var time = 0
+            override fun run() {
+                if (time < (ms / 1000).toInt()) {
+                    time += 1
+                    progressBar.incrementProgressBy((100L / (ms / 1000)).toInt())
+                    timerHandler.postDelayed(this, 1000)
                 }
-            }, ms)
-        }
+            }
+        })
     }
 
     private fun stopScanning() {
-        Log.d(TAG, "Scanner stopped...")
-        blStateScanning.visibility = View.INVISIBLE
-        AsyncTask.execute {
-            bluetoothLeScanner.stopScan(leScanCallback)
+        Log.i(TAG, "Scanner stopped...")
+        runOnUiThread{
+            blStateScanning.visibility = View.INVISIBLE
+            progressBar.visibility = View.GONE
+            progressBar.progress = 0
         }
+        bluetoothLeScanner.stopScan(leScanCallback)
     }
 
-    private fun updateSortButtonText() {
-        if (sorted) {
-            sortButton.text = getString(R.string.disable_sort_button)
-        } else {
-            sortButton.text = getString(R.string.enable_sort_button)
-        }
-    }
-
-
-//    private fun getFakeDevices(): MutableList<BLEDevice> {
-//        return mutableListOf(
-//            BLEDevice("Test Device", "74:BF:C0:18:64:0F", -20, false),
-//            BLEDevice("Test Device", "74:BF:C0:18:64:0F", -90, false),
-//            BLEDevice("Test Device", "74:BF:C0:18:64:0F", -2, false),
-//            BLEDevice("Test Device", "74:BF:C0:18:64:0F", -40, false),
-//            BLEDevice("Test Device", "74:BF:C0:18:64:0F", -50, false)
-//        )
-//    }
 }

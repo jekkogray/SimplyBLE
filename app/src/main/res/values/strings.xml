@@ -1,8 +1,8 @@
 <resources>
     <string name="app_name">SimplyBLE</string>
 
-    <string name="disable_sort_button">Disable Sort RSSI</string>
-    <string name="enable_sort_button">Enable Sort RSSI</string>
+    <string name="sorting_enabled">Sorting Enabled</string>
+    <string name="sorting_disabled">Sorting Disabled</string>
 
     <!-- rows_device.xml-->
     <string name="device_name">Device:</string>
