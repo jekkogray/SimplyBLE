@@ -29,6 +29,6 @@ When the application finish installing an indicator on the lower right *Event Lo
 indicating that the APK(s) generated succesfully for 1 module. 
 
 Click on *locate* and it will direct you to the .apk file. 
-To install proceed with the same instructions above.
+
 
 
