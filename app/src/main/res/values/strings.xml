@@ -26,18 +26,16 @@
     <string name="toast_bl_disabled">BL is disabled.</string>
 
     <!-- States -->
-    <string name="label_bl_state_scanning">Scanning for devices...</string>
+    <string name="label_bl_state_scanning">Scanning for devices…</string>
     <string name="label_bl_state_scanning_completed">Scanning completed</string>
     <string name="toast_bl_state_scan_failed">Scan failed, try again.</string>
-    <string name="label_bl_devices_found">Found: </string>
+    <string name="label_bl_devices_found">Found:</string>
     <string name="toast_bl_devices_not_found">No BLE devices nearby.</string>
 
     <!-- Gatt Connection -->
     <string name="toast_gatt_connected">Connected to GATT</string>
-    <string name="toast_gatt_connecting">Connected to</string>
+    <string name="toast_gatt_connecting">Connecting to</string>
     <string name="toast_gatt_not_connectable">is not connectable</string>
     <string name="toast_gatt_disconnected">Disconnected to GATT</string>
     <string name="toast_gatt_connection_failed">Failed to connect</string>
-
-
 </resources>

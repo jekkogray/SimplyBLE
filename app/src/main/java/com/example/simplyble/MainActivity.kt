@@ -68,7 +68,6 @@ class MainActivity : AppCompatActivity() {
         progressBarScar = findViewById(R.id.progressBar)
         devicesRecyclerView = findViewById(R.id.devicesRecyclerView)
         sortButton = findViewById(R.id.sortingButton)
-
         devicesAdapter = DevicesAdapter(mutableListOf<BLEDevice>())
         devicesRecyclerView.adapter = devicesAdapter
         devicesRecyclerView.layoutManager = LinearLayoutManager(this)
@@ -238,6 +237,7 @@ class MainActivity : AppCompatActivity() {
      */
     private fun startScanning(scanDuration: Long = SCAN_DURATION) {
         Log.i(TAG, "Scanner started...")
+        blDevicesFound.text = "${getString(R.string.label_bl_devices_found)} 0"
         scanning = true
         updateUIState()
         bluetoothLeScanner.startScan(leScanCallback)
@@ -268,6 +268,10 @@ class MainActivity : AppCompatActivity() {
         scanning = false
         updateUIState()
         bluetoothLeScanner.stopScan(leScanCallback)
+        // No bluetooth devices found
+        if (devicesAdapter.itemCount == 0) {
+            blStateScanning.text = getString(R.string.toast_bl_devices_not_found)
+        }
     }
 
     /**
@@ -369,6 +373,10 @@ class MainActivity : AppCompatActivity() {
                 getString(R.string.toast_bl_state_scan_failed),
                 Toast.LENGTH_SHORT
             ).show()
+            // No bluetooth devices found
+            if (devicesAdapter.itemCount == 0) {
+                blStateScanning.text = getString(R.string.toast_bl_devices_not_found)
+            }
         }
     }
 
@@ -379,6 +387,7 @@ class MainActivity : AppCompatActivity() {
         runOnUiThread() {
             if (scanning) {
                 blStateScanning.text = getString(R.string.label_bl_state_scanning)
+                blStateScanning.visibility = View.VISIBLE
                 blDevicesFound.visibility = View.VISIBLE
                 progressBarScar.visibility = View.VISIBLE
             } else {
@@ -387,10 +396,7 @@ class MainActivity : AppCompatActivity() {
                 progressBarScar.visibility = View.GONE
                 progressBarScar.progress = 0
             }
-            // No bluetooth devices found
-            if (devicesAdapter.itemCount == 0) {
-                blStateScanning.text = getString(R.string.toast_bl_devices_not_found)
-            }
+
             if (sort) {
                 sortButton.text = getString(R.string.sorting_button_label_enabled)
             } else {
