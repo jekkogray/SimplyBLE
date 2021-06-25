@@ -6,7 +6,7 @@
 
 Developed on Pixel 2XL running Android 11.
 
-[Source Code](https://github.com/jekkogray/SimplyBLE/tree/main/app/src/main/java/com/example/simplyble)
+APK: [SimplyBLE v1.0](https://github.com/jekkogray/SimplyBLE/releases/tag/v1.0)
 
 ## Important Notes
 Device Minimum API is 26.
