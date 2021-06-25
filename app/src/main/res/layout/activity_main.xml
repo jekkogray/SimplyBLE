@@ -17,12 +17,12 @@
         app:layout_constraintTop_toBottomOf="@+id/progressBar" />
 
     <Button
-        android:id="@+id/sortButton"
+        android:id="@+id/sortingButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginBottom="16dp"
         android:contentDescription="Enables or disables sorting by RSSI."
-        android:text="@string/sorting_disabled"
+        android:text="@string/sorting_button_label_disabled"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
@@ -31,7 +31,7 @@
         android:id="@+id/bl_state_scanning"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/bl_state_scanning"
+        android:text="@string/label_bl_state_scanning"
         android:visibility="invisible"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -42,7 +42,7 @@
         android:id="@+id/bl_devices_found"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/bl_devices_found"
+        android:text="@string/label_bl_devices_found"
         android:visibility="invisible"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"

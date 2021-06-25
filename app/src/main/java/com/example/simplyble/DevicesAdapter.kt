@@ -22,7 +22,11 @@ class DevicesAdapter(
 
     var sort: Boolean = false
 
-    fun addItem(device: BLEDevice) {
+    /**
+     * Adds a new device to the end of the list.
+     * If sorting is enabled it will automatically be sorted to their appropriate places.
+     */
+    fun addDevice(device: BLEDevice) {
         val updateDeviceIndex = BLEDevices.indexOfFirst { it.deviceAddress == device.deviceAddress }
         if (updateDeviceIndex != -1) {
             BLEDevices[updateDeviceIndex] = device
@@ -36,6 +40,11 @@ class DevicesAdapter(
         this.notifyDataSetChanged()
     }
 
+    /**
+     * Toggles sorting of current detected devices and devices to be scanned.
+     * Return the status of the sort
+     * @return sort
+     */
     fun toggleSorting(): Boolean {
         sort = !sort
         if (sort) {
@@ -49,38 +58,58 @@ class DevicesAdapter(
         BLEDevices.sortByDescending { it.deviceRSSI }
     }
 
-    // Recyclerview new row creation -- specify XML.
+    /**
+     * Inflates XML to be used for the new row creation.
+     */
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val layoutInflater: LayoutInflater = LayoutInflater.from(parent.context)
         val view: View = layoutInflater.inflate(R.layout.row_device, parent, false)
         return ViewHolder(view)
     }
 
+    /**
+     * Gets device list size
+     */
     override fun getItemCount(): Int {
         return BLEDevices.size
     }
 
-    // ViewHolder ready to display new row.
+    /**
+     * Binds row when viewholder is ready to display a new row
+     */
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val currentDevice = BLEDevices.elementAt(position)
         val viewContext = holder.itemView.context
+        val deviceName = currentDevice.deviceName
+
+        holder.deviceName.text =
+            "${viewContext.getString(R.string.card_label_device_name)} ${currentDevice.deviceName}"
+        holder.deviceRSSI.text =
+            "${viewContext.getString(R.string.card_label_device_RSSI)} ${currentDevice.deviceRSSI}"
+        holder.deviceConnectable.text =
+            "${viewContext.getString(R.string.card_label_device_connectable)} ${currentDevice.deviceConnectable}"
 
         holder.deviceCard.setOnClickListener {
+            // Broadcast attempt to connect to device
             if (currentDevice.deviceConnectable) {
-                Toast.makeText(viewContext, "Connecting...", Toast.LENGTH_SHORT).show()
+                Toast.makeText(
+                    viewContext,
+                    "${viewContext.getString(R.string.toast_gatt_connecting)} $deviceName",
+                    Toast.LENGTH_SHORT
+                ).show()
                 val intentBLEDeviceConnect = Intent("BLEDeviceConnect")
                 intentBLEDeviceConnect.putExtra("BLEDeviceAddress", currentDevice.deviceAddress)
                 it.context.sendBroadcast(intentBLEDeviceConnect)
             } else {
-                Toast.makeText(viewContext, "${currentDevice.deviceName} is not connectable.", Toast.LENGTH_SHORT).show()
+                // Not connectable
+                Toast.makeText(
+                    viewContext,
+                    "$deviceName ${viewContext.getString(R.string.toast_gatt_not_connectable)}",
+                    Toast.LENGTH_SHORT
+                ).show()
             }
             this.notifyDataSetChanged()
         }
-        holder.deviceName.text =
-            "${viewContext.getString(R.string.device_name)} ${currentDevice.deviceName}"
-        holder.deviceRSSI.text =
-            "${viewContext.getString(R.string.device_RSSI)} ${currentDevice.deviceRSSI}"
-        holder.deviceConnectable.text =
-            "${viewContext.getString(R.string.device_connectable)} ${currentDevice.deviceConnectable}"
+
     }
 }

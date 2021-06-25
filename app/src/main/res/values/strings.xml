@@ -1,25 +1,43 @@
 <resources>
     <string name="app_name">SimplyBLE</string>
 
-    <string name="sorting_enabled">Sorting Enabled</string>
-    <string name="sorting_disabled">Sorting Disabled</string>
+    <!-- PERMISSIONS -->
+    <string name="dialog_permissions_title_message">Please allow the following permissions</string>
+    <string name="dialog_permissions_message">Bluetooth, Bluetooth admin, fine location, and background location access are required to find and connect to BLE devices.</string>
+    <string name="dialog_positive_button">Ok</string>
+    <string name="dialog_neutral_button">Cancel</string>
+    <string name="toast_permissions_granted">Permissions granted</string>
+    <string name="toast_permissions_denied">Permissions denied</string>
+    <string name="toast_permissions_already_granted">Permissions already granted</string>
 
-    <!-- rows_device.xml-->
-    <string name="device_name">Device:</string>
-    <string name="device_connectable">Connectable:</string>
-    <string name="device_RSSI">RSSI:</string>
-    <string name="ble_not_supported">BLE is not supported in this device.</string>
-    <string name="ble_supported">BLE found.</string>
-    <string name="bl_not_supported">BL is not supported in this device.</string>
-    <string name="bl_enabled">BL is enabled.</string>
-    <string name="bl_disabled">BL is disabled.</string>
-    <string name="bl_permission_enabled">BL permission is enabled.</string>
-    <string name="bl_permission_disabled">BL permission is disabled.</string>
+    <!-- Main Activity -->
+    <string name="sorting_button_label_enabled">Sorting Enabled</string>
+    <string name="sorting_button_label_disabled">Sorting Disabled</string>
 
-    <!--    states-->
-    <string name="bl_state_scanning">Scanning for devices...</string>
-    <string name="bl_devices_found">Found: </string>
-    <string name="bl_devices_not_found">No BLE devices nearby.</string>
-    <string name="bl_state_scan_failed">Scan failed, try again.</string>
+    <!-- Device Rows -->
+    <string name="card_label_device_name">Device: </string>
+    <string name="card_label_device_connectable">Connectable: </string>
+    <string name="card_label_device_RSSI">RSSI: </string>
+
+    <!-- Bluetooth -->
+    <string name="toast_ble_supported">BLE is supported in this device.</string>
+    <string name="toast_ble_not_supported">BLE is not supported in this device.</string>
+    <string name="toast_bl_enabled">BL is enabled.</string>
+    <string name="toast_bl_disabled">BL is disabled.</string>
+
+    <!-- States -->
+    <string name="label_bl_state_scanning">Scanning for devices...</string>
+    <string name="label_bl_state_scanning_completed">Scanning completed</string>
+    <string name="toast_bl_state_scan_failed">Scan failed, try again.</string>
+    <string name="label_bl_devices_found">Found: </string>
+    <string name="toast_bl_devices_not_found">No BLE devices nearby.</string>
+
+    <!-- Gatt Connection -->
+    <string name="toast_gatt_connected">Connected to GATT</string>
+    <string name="toast_gatt_connecting">Connected to</string>
+    <string name="toast_gatt_not_connectable">is not connectable</string>
+    <string name="toast_gatt_disconnected">Disconnected to GATT</string>
+    <string name="toast_gatt_connection_failed">Failed to connect</string>
+
 
 </resources>
